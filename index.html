@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session 14: Refresh Token & Phân Quyền Trong Microservices với Spring Boot</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="light-theme">
+    <!-- Ambient light background decorative blobs -->
+    <div class="light-bg-blob blob-1"></div>
+    <div class="light-bg-blob blob-2"></div>
+    <div class="light-bg-blob blob-3"></div>
+
+    <!-- Presentation Header -->
+    <header class="presentation-header">
+        <div class="logo-area">
+            <div class="spring-icon-box"><i class="fa-solid fa-leaf"></i></div>
+            <div>
+                <span class="badge-tag">SPRING BOOT MICROSERVICES</span>
+                <span class="session-label">SESSION 14 • BÀI CUỐI</span>
+            </div>
+        </div>
+        <div class="header-center">
+            <div class="topic-pill">
+                <i class="fa-solid fa-shield-halved"></i>
+                <span id="headerSlideTitle">Bảo Mật Hệ Thống & Phân Quyền Phân Tán</span>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="nav-icon-btn" id="btnOverview" title="Tổng quan các slide (Phím O)"><i class="fa-solid fa-table-cells"></i> <span>Tổng quan</span></button>
+            <button class="nav-icon-btn" id="btnFullscreen" title="Toàn màn hình (Phím F)"><i class="fa-solid fa-expand"></i></button>
+        </div>
+    </header>
+
+    <!-- Slide Container -->
+    <main class="slide-container" id="slideContainer">
+
+        <!-- ==================== SLIDE 1: TITLE ==================== -->
+        <section class="slide active" data-slide="1">
+            <div class="slide-content title-slide-layout">
+                <div class="title-left">
+                    <div class="title-meta">
+                        <span class="tag-pill gradient-pill"><i class="fa-solid fa-shield-cat"></i> Microservices Security</span>
+                        <span class="tag-pill outline-pill">Hệ thống phân tán với Spring Cloud & Redis</span>
+                    </div>
+                    <h1 class="main-title">
+                        Refresh Token, Phân Quyền & <br>
+                        <span class="gradient-text">Thu Hồi Token (Redis Blacklist)</span>
+                    </h1>
+                    <p class="subtitle">
+                        Kiến trúc bảo mật toàn diện cho hệ sinh thái Microservices: Cơ chế xoay vòng Refresh Token (Rotation), phân quyền RBAC đa tầng và xử lý Đăng xuất triệt để với Redis Cache.
+                    </p>
+
+                    <div class="title-feature-chips">
+                        <div class="chip"><i class="fa-solid fa-key"></i> Dual-Token Pattern</div>
+                        <div class="chip"><i class="fa-solid fa-arrows-rotate"></i> Token Rotation</div>
+                        <div class="chip"><i class="fa-solid fa-user-lock"></i> RBAC @PreAuthorize</div>
+                        <div class="chip"><i class="fa-solid fa-bolt"></i> Redis Blacklist TTL</div>
+                    </div>
+                </div>
+
+                <div class="title-right">
+                    <!-- Sơ đồ minh họa trực quan Header Hero -->
+                    <div class="hero-illustration-card">
+                        <div class="card-glass-header">
+                            <span class="dot-red"></span><span class="dot-yellow"></span><span class="dot-green"></span>
+                            <span class="card-caption">Distributed Security Workflow</span>
+                        </div>
+                        <div class="hero-svg-wrapper">
+                            <svg viewBox="0 0 420 280" class="hero-svg" xmlns="http://www.w3.org/2000/svg">
+                                <!-- Client Node -->
+                                <rect x="20" y="105" width="80" height="70" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+                                <text x="60" y="135" text-anchor="middle" font-size="12" font-weight="bold" fill="#1e40af">Client</text>
+                                <text x="60" y="153" text-anchor="middle" font-size="10" fill="#64748b">Web / App</text>
+
+                                <!-- Gateway Node -->
+                                <rect x="150" y="80" width="100" height="120" rx="12" fill="#faf5ff" stroke="#8b5cf6" stroke-width="2.5"/>
+                                <text x="200" y="115" text-anchor="middle" font-size="13" font-weight="bold" fill="#6b21a8">API Gateway</text>
+                                <text x="200" y="135" text-anchor="middle" font-size="9.5" fill="#7c3aed">JWT Auth Filter</text>
+                                <text x="200" y="152" text-anchor="middle" font-size="9.5" fill="#db2777">Check Blacklist</text>
+                                <text x="200" y="170" text-anchor="middle" font-size="9.5" fill="#2563eb">Forward Claims</text>
+
+                                <!-- Redis Node -->
+                                <rect x="150" y="10" width="100" height="50" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="2"/>
+                                <text x="200" y="32" text-anchor="middle" font-size="11" font-weight="bold" fill="#b91c1c">Redis Cache</text>
+                                <text x="200" y="47" text-anchor="middle" font-size="9" fill="#dc2626">Blacklist (TTL)</text>
+
+                                <!-- Downstream Services -->
+                                <rect x="300" y="40" width="105" height="55" rx="8" fill="#f0fdf4" stroke="#10b981" stroke-width="2"/>
+                                <text x="352" y="64" text-anchor="middle" font-size="11" font-weight="bold" fill="#065f46">Auth-Service</text>
+                                <text x="352" y="79" text-anchor="middle" font-size="9" fill="#059669">Login / Refresh</text>
+
+                                <rect x="300" y="115" width="105" height="55" rx="8" fill="#ecfeff" stroke="#06b6d4" stroke-width="2"/>
+                                <text x="352" y="139" text-anchor="middle" font-size="11" font-weight="bold" fill="#0e7490">Order-Service</text>
+                                <text x="352" y="154" text-anchor="middle" font-size="9" fill="#0891b2">@PreAuthorize</text>
+
+                                <rect x="300" y="190" width="105" height="55" rx="8" fill="#fffbeb" stroke="#f59e0b" stroke-width="2"/>
+                                <text x="352" y="214" text-anchor="middle" font-size="11" font-weight="bold" fill="#92400e">Product-Service</text>
+                                <text x="352" y="229" text-anchor="middle" font-size="9" fill="#b45309">Role Filter</text>
+
+                                <!-- Connecting Lines -->
+                                <path d="M 100 140 L 150 140" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrow-blue)"/>
+                                <path d="M 200 80 L 200 60" stroke="#ef4444" stroke-width="2" stroke-dasharray="3,3"/>
+                                <path d="M 250 115 L 300 70" stroke="#8b5cf6" stroke-width="1.8"/>
+                                <path d="M 250 140 L 300 140" stroke="#8b5cf6" stroke-width="1.8"/>
+                                <path d="M 250 165 L 300 215" stroke="#8b5cf6" stroke-width="1.8"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== SLIDE 2: AGENDA ==================== -->
+        <section class="slide" data-slide="2">
+            <div class="slide-content">
+                <div class="slide-header">
+                    <div class="header-left">
+                        <span class="section-tag">NỘI DUNG TRỌNG TÂM</span>
+                        <h2>4 Bài học cốt lõi trong Session 14</h2>
+                    </div>
+                </div>
+
+                <div class="agenda-grid-light">
+                    <div class="agenda-card-light card-l1">
+                        <div class="agenda-icon-circle c-blue"><i class="fa-solid fa-lock-open"></i></div>
+                        <div class="agenda-body">
+                            <span class="lesson-kicker">Lesson 1</span>
+                            <h3>Vấn đề bảo mật của Access Token & Cơ chế Refresh Token</h3>
+                            <p>Phân tích nghịch lý Stateless JWT, rủi ro token dài hạn, mô hình Dual-Token và cơ chế Token Rotation chống tấn công phát lại (Replay Attack).</p>
+                        </div>
+                        <div class="card-footer-tag">Stateless vs Stateful</div>
+                    </div>
+
+                    <div class="agenda-card-light card-l2">
+                        <div class="agenda-icon-circle c-purple"><i class="fa-solid fa-arrows-spin"></i></div>
+                        <div class="agenda-body">
+                            <span class="lesson-kicker">Lesson 2</span>
+                            <h3>Triển khai API cấp lại token mới (Refresh Token)</h3>
+                            <p>Thiết kế Database Entity quản lý Token, viết Service xác thực & xoay vòng Token mới, thực hành kiểm thử trọn vẹn luồng cấp phát trên Postman.</p>
+                        </div>
+                        <div class="card-footer-tag">API Implementation</div>
+                    </div>
+
+                    <div class="agenda-card-light card-l3">
+                        <div class="agenda-icon-circle c-teal"><i class="fa-solid fa-id-card-clip"></i></div>
+                        <div class="agenda-body">
+                            <span class="lesson-kicker">Lesson 3</span>
+                            <h3>Thiết lập Role/Permission & Phân quyền Service con</h3>
+                            <p>Cơ chế chuyển tiếp JWT Claims từ API Gateway xuống Microservices con, cấu hình SecurityFilterChain và sử dụng @PreAuthorize("hasRole(...)").</p>
+                        </div>
+                        <div class="card-footer-tag">RBAC & PBAC</div>
+                    </div>
+
+                    <div class="agenda-card-light card-l4">
+                        <div class="agenda-icon-circle c-red"><i class="fa-solid fa-power-off"></i></div>
+                        <div class="agenda-body">
+                            <span class="lesson-kicker">Lesson 4</span>
+                            <h3>Thu hồi token (Redis Blacklist) & Xử lý Đăng xuất</h3>
+                            <p>Giải quyết triệt để vấn đề Đăng xuất của Stateless JWT bằng Redis Blacklist với TTL động tự giải phóng RAM theo thời gian sống của token.</p>
+                        </div>
+                        <div class="card-footer-tag">Token Revocation</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== SLIDE 3: LESSON 1 - ACCESS TOKEN ISSUES & DIAGRAM ==================== -->
+        <section class="slide" data-slide="3">
+            <div class="slide-content">
+                <div class="slide-header">
+                    <div class="header-left">
+                        <span class="section-tag">LESSON 1: BẢN CHẤT VẤN ĐỀ BẢO MẬT</span>
+                        <h2>Nghịch lý Stateless & So sánh Thời gian sống của Token</h2>
+                    </div>
+                </div>
+
+                <div class="two-col-layout">
+                    <!-- Left: Problem explanation -->
+                    <div class="col-box-light danger-box">
+                        <div class="box-head">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            <h3>Rủi ro khi dùng Access Token dài hạn (ví dụ: 30 ngày)</h3>
+                        </div>
+                        <ul class="styled-list-light">
+                            <li><strong>Không thể vô hiệu hóa tức thời:</strong> JWT là hoàn toàn Stateless, Server không giữ session. Khi bị lộ token, Server không có cách nào ngăn kẻ gian gửi request.</li>
+                            <li><strong>Cửa sổ tấn công (Attack Window) quá rộng:</strong> Bất kỳ ai sở hữu token (qua XSS/Sniffing) đều có toàn quyền thực thi suốt 30 ngày.</li>
+                            <li><strong>Claims không cập nhật:</strong> Khi tài khoản bị đổi Role hoặc khóa tài khoản, Token cũ vẫn mang quyền lực cũ cho đến khi hết hạn.</li>
+                        </ul>
+
+                        <!-- Visual Comparison Chart SVG -->
+                        <div class="timeline-visual-diagram">
+                            <div class="diag-title"><i class="fa-solid fa-chart-gantt"></i> So sánh Cửa Sổ Tấn Công (Attack Window)</div>
+                            <svg viewBox="0 0 450 110" class="mini-svg">
+                                <!-- Long lived token -->
+                                <text x="10" y="24" font-size="11" font-weight="bold" fill="#dc2626">1 Access Token (30 ngày):</text>
+                                <rect x="10" y="32" width="430" height="18" rx="4" fill="#fee2e2" stroke="#ef4444" stroke-width="1.5"/>
+                                <text x="220" y="45" text-anchor="middle" font-size="10" font-weight="bold" fill="#b91c1c">⚠️ Cửa sổ nguy hiểm cực dài (30 ngày rủi ro)</text>
+
+                                <!-- Short lived token -->
+                                <text x="10" y="76" font-size="11" font-weight="bold" fill="#16a34a">Cặp Dual-Token (Access Token 15 phút):</text>
+                                <rect x="10" y="84" width="70" height="18" rx="4" fill="#dcfce7" stroke="#10b981" stroke-width="1.5"/>
+                                <text x="45" y="97" text-anchor="middle" font-size="9" font-weight="bold" fill="#15803d">15 Phút</text>
+                                <rect x="85" y="84" width="355" height="18" rx="4" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3,3"/>
+                                <text x="260" y="97" text-anchor="middle" font-size="9.5" fill="#64748b">Được bảo vệ bởi Refresh Token lưu trong DB & Rotation</text>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Right: Solution Comparison -->
+                    <div class="col-box-light success-box">
+                        <div class="box-head">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            <h3>Mô hình Cặp Token (Dual-Token Architecture)</h3>
+                        </div>
+                        <div class="comp-table-light">
+                            <div class="comp-header-row">
+                                <div>Tiêu chí</div>
+                                <div>Access Token</div>
+                                <div>Refresh Token</div>
+                            </div>
+                            <div class="comp-data-row">
+                                <div class="c-title"><strong>Thời hạn sống</strong></div>
+                                <div><span class="tag-short">5 - 15 Phút (Rất ngắn)</span></div>
+                                <div><span class="tag-long">7 - 30 Ngày (Dài)</span></div>
+                            </div>
+                            <div class="comp-data-row">
+                                <div class="c-title"><strong>Lưu trữ Server</strong></div>
+                                <div><span class="val-stateless">Stateless (Không lưu)</span></div>
+                                <div><span class="val-stateful">Stateful (Lưu DB/Redis)</span></div>
+                            </div>
+                            <div class="comp-data-row">
+                                <div class="c-title"><strong>Mục đích sử dụng</strong></div>
+                                <div>Kèm header gọi Resource API</div>
+                                <div>Chỉ gửi đến <code>/auth/refresh</code></div>
+                            </div>
+                            <div class="comp-data-row">
+                                <div class="c-title"><strong>Mức độ kiểm soát</strong></div>
+                                <div>Tối thiểu hóa rủi ro lộ lọt</div>
+                                <div>Server có thể Revoke bất kỳ lúc nào</div>
+                            </div>
+                        </div>
+
+                        <div class="key-callout-light">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <div>
+                                <strong>Ưu điểm vượt trội:</strong> Người dùng không phải nhập lại mật khẩu liên tục (UX mượt mà) nhưng hệ thống vẫn đảm bảo an toàn tối đa (Security chuẩn ngân hàng).
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== SLIDE 4: LESSON 1 - REFRESH ROTATION SƠ ĐỒ ==================== -->
+        <section class="slide" data-slide="4">
+            <div class="slide-content">
+                <div class="slide-header">
+                    <div class="header-left">
+                        <span class="section-tag">LESSON 1: NGUYÊN LÝ HOẠT ĐỘNG</span>
+                        <h2>Sơ đồ Cơ chế Xoay Vòng Token (Refresh Token Rotation)</h2>
+                    </div>
+                </div>
+
+                <!-- Full SVG Flow diagram for Token Rotation & Replay Attack Detection -->
+                <div class="diagram-canvas-card">
+                    <svg viewBox="0 0 950 360" class="flow-svg" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Step 1: Login -->
+                        <g transform="translate(30, 40)">
+                            <rect width="240" height="130" rx="12" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+                            <circle cx="28" cy="28" r="14" fill="#3b82f6"/>
+                            <text x="28" y="33" text-anchor="middle" font-size="12" font-weight="bold" fill="#fff">1</text>
+                            <text x="52" y="33" font-size="13" font-weight="bold" fill="#1e40af">Đăng Nhập Thành Công</text>
+                            
+                            <rect x="16" y="52" width="208" height="30" rx="6" fill="#fff" stroke="#bfdbfe"/>
+                            <text x="24" y="71" font-size="10" font-family="monospace" fill="#1e3a8a">Access Token (AT_1: 15p)</text>
+
+                            <rect x="16" y="88" width="208" height="30" rx="6" fill="#fff" stroke="#bfdbfe"/>
+                            <text x="24" y="107" font-size="10" font-family="monospace" fill="#1e3a8a">Refresh Token (RT_1: 7d)</text>
+                        </g>
+
+                        <!-- Arrow 1 -> 2 -->
+                        <path d="M 270 105 L 340 105" stroke="#64748b" stroke-width="2.5" marker-end="url(#arrow-slate)"/>
+                        <text x="305" y="95" text-anchor="middle" font-size="10" font-weight="600" fill="#64748b">Sau 15p</text>
+
+                        <!-- Step 2: AT Expired & Refresh request -->
+                        <g transform="translate(340, 40)">
+                            <rect width="250" height="130" rx="12" fill="#fefce8" stroke="#eab308" stroke-width="2"/>
+                            <circle cx="28" cy="28" r="14" fill="#eab308"/>
+                            <text x="28" y="33" text-anchor="middle" font-size="12" font-weight="bold" fill="#fff">2</text>
+                            <text x="52" y="33" font-size="13" font-weight="bold" fill="#854d0e">AT_1 Hết Hạn & Đổi Mới</text>
+                            
+                            <text x="16" y="65" font-size="10.5" fill="#713f12">Client nhận mã 401 Unauthorized.</text>
+                            <rect x="16" y="78" width="218" height="40" rx="6" fill="#fff" stroke="#fef08a"/>
+                            <text x="24" y="96" font-size="10" font-weight="bold" fill="#a16207">POST /auth/refresh-token</text>
+                            <text x="24" y="111" font-size="9" font-family="monospace" fill="#64748b">Body: { refreshToken: RT_1 }</text>
+                        </g>
+
+                        <!-- Arrow 2 -> 3 -->
+                        <path d="M 590 105 L 660 105" stroke="#64748b" stroke-width="2.5" marker-end="url(#arrow-slate)"/>
+
+                        <!-- Step 3: Token Rotation -->
+                        <g transform="translate(660, 40)">
+                            <rect width="260" height="130" rx="12" fill="#f0fdf4" stroke="#10b981" stroke-width="2.5"/>
+                            <circle cx="28" cy="28" r="14" fill="#10b981"/>
+                            <text x="28" y="33" text-anchor="middle" font-size="12" font-weight="bold" fill="#fff">3</text>
+                            <text x="52" y="33" font-size="13" font-weight="bold" fill="#065f46">Token Rotation (Xoay Vòng)</text>
+                            
+                            <text x="16" y="62" font-size="10" fill="#dc2626" font-weight="bold">❌ Hủy RT_1: revoked = true</text>
+                            <rect x="16" y="72" width="228" height="48" rx="6" fill="#fff" stroke="#bbf7d0"/>
+                            <text x="24" y="90" font-size="9.5" font-family="monospace" fill="#15803d">✅ Cấp AT_2 (15 phút mới)</text>
+                            <text x="24" y="108" font-size="9.5" font-family="monospace" fill="#15803d">✅ Cấp RT_2 (7 ngày mới)</text>
+                        </g>
+
+                        <!-- Bottom Branch: Replay Attack Detection -->
+                        <path d="M 465 170 L 465 220 L 465 240" stroke="#ef4444" stroke-width="2" stroke-dasharray="4,4"/>
+                        <text x="475" y="210" font-size="10" font-weight="bold" fill="#dc2626">Nếu Hacker dùng lại RT_1 cũ?</text>
+
+                        <g transform="translate(240, 240)">
+                            <rect width="470" height="95" rx="12" fill="#fef2f2" stroke="#ef4444" stroke-width="2.5"/>
+                            <circle cx="30" cy="28" r="14" fill="#ef4444"/>
+                            <text x="30" y="33" text-anchor="middle" font-size="12" font-weight="bold" fill="#fff">⚠️</text>
+                            <text x="55" y="33" font-size="13" font-weight="bold" fill="#991b1b">Kích Hoạt Cơ Chế Phòng Thủ (Replay Attack Detected)</text>
+                            
+                            <text x="20" y="60" font-size="11" fill="#7f1d1d">
+                                Server phát hiện RT_1 đã có cờ <tspan font-family="monospace" font-weight="bold" fill="#b91c1c">revoked = true</tspan> nhưng vẫn bị gửi lại!
+                            </text>
+                            <text x="20" y="78" font-size="11" font-weight="bold" fill="#dc2626">
+                                ➔ HÀNH ĐỘNG: Hủy toàn bộ token của User đó ngay lập tức, bắt đăng nhập lại!
+                            </text>
+                        </g>
+
+                        <!-- Marker Definitions -->
+                        <defs>
+                            <marker id="arrow-slate" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto">
+                                <path d="M 0 0 L 6 3 L 0 6 z" fill="#64748b" />
+                            </marker>
+                        </defs>
+                    </svg>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== SLIDE 5: LESSON 2 - DATA & API DESIGN ==================== -->
+        <section class="slide" data-slide="5">
+            <div class="slide-content">
+                <div class="slide-header">
+                    <div class="header-left">
+                        <span class="section-tag">LESSON 2: TRIỂN KHAI BACKEND</span>
+                        <h2>Thiết kế Database & Endpoint Cấp Lại Token</h2>
+                    </div>
+                </div>
+
+                <div class="two-col-layout">
+                    <!-- Column 1: Schema & Entity -->
+                    <div class="col-box-light">
+                        <div class="box-head">
+                            <i class="fa-solid fa-database text-blue"></i>
+                            <h3>1. Entity RefreshToken (MySQL / JPA)</h3>
+                        </div>
+                        <pre class="code-block-light"><code class="language-java"><span class="kwd">@Entity</span>
+<span class="kwd">@Table</span>(name = <span class="str">"refresh_tokens"</span>)
+<span class="kwd">public class</span> <span class="cls">RefreshToken</span> {
+    <span class="kwd">@Id</span>
+    <span class="kwd">@GeneratedValue</span>(strategy = GenerationType.IDENTITY)
+    <span class="kwd">private</span> Long id;
+
+    <span class="kwd">@Column</span>(nullable = <span class="kwd">false</span>, unique = <span class="kwd">true</span>)
+    <span class="kwd">private</span> String token; <span class="cmt">// UUID ngẫu nhiên</span>
+
+    <span class="kwd">@Column</span>(nullable = <span class="kwd">false</span>)
+    <span class="kwd">private</span> Instant expiryDate;
+
+    <span class="kwd">private boolean</span> revoked = <span class="kwd">false</span>; <span class="cmt">// Cờ thu hồi</span>
+
+    <span class="kwd">@ManyToOne</span>
+    <span class="kwd">@JoinColumn</span>(name = <span class="str">"user_id"</span>)
+    <span class="kwd">private</span> User user;
+}</code></pre>
+                    </div>
+
+                    <!-- Column 2: Service Logic -->
+                    <div class="col-box-light">
+                        <div class="box-head">
+                            <i class="fa-solid fa-code text-purple"></i>
+                            <h3>2. Logic Xoay Vòng tại AuthService</h3>
+                        </div>
+                        <pre class="code-block-light"><code class="language-java"><span class="kwd">@Transactional</span>
+<span class="kwd">public</span> TokenResponse refreshToken(String tokenStr) {
+    RefreshToken rt = refreshTokenRepo.findByToken(tokenStr)
+        .orElseThrow(() -> <span class="kwd">new</span> RuntimeException(<span class="str">"Token không tồn tại"</span>));
+
+    <span class="cmt">// 1. Kiểm tra hết hạn hoặc đã bị revoke</span>
+    <span class="kwd">if</span> (rt.getExpiryDate().isBefore(Instant.now()) || rt.isRevoked()) {
+        <span class="kwd">throw new</span> TokenException(<span class="str">"Token không hợp lệ hoặc đã dùng!"</span>);
+    }
+
+    <span class="cmt">// 2. Token Rotation: Hủy token cũ</span>
+    rt.setRevoked(<span class="kwd">true</span>);
+    refreshTokenRepo.save(rt);
+
+    <span class="cmt">// 3. Cấp cặp Token mới</span>
+    String newAccess = jwtService.generateToken(rt.getUser());
+    RefreshToken newRt = createRefreshToken(rt.getUser());
+
+    <span class="kwd">return new</span> TokenResponse(newAccess, newRt.getToken());
+}</code></pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== SLIDE 6: LESSON 2 - LIVE DEMO POSTMAN ==================== -->
+        <section class="slide" data-slide="6">
+            <div class="slide-content">
+                <div class="slide-header">
+                    <div class="header-left">
+                        <span class="section-tag">LESSON 2: TRÌNH GIẢ LẬP DEMO TRỰC QUAN</span>
+                        <h2>Kiểm Thử Luồng Cấp Lại Token (Postman Simulator)</h2>
+                    </div>
+                    <div class="live-status-pill"><span class="pulse-dot"></span> LIVE TEST FLOW</div>
+                </div>
+
+                <div class="postman-light-container">
+                    <!-- Step Selector Buttons -->
+                    <div class="postman-stepper">
+                        <div class="p-step active" data-mock="login">
+                            <div class="step-num">1</div>
+                            <div class="step-text">
+                                <span class="http-tag post">POST</span>
+                                <strong>/auth/login</strong>
+                                <small>Đăng nhập & nhận cặp Token (AT 30s)</small>
+                            </div>
+                        </div>
+                        <div class="p-step" data-mock="call-expired">
+                            <div class="step-num">2</div>
+                            <div class="step-text">
+                                <span class="http-tag get">GET</span>
+                                <strong>/api/orders</strong>
+                                <small>Sau 30s ➔ 401 Unauthorized (Expired)</small>
+                            </div>
+                        </div>
+                        <div class="p-step" data-mock="refresh-call">
+                            <div class="step-num">3</div>
+                            <div class="step-text">
+                                <span class="http-tag post">POST</span>
+                                <strong>/auth/refresh-token</strong>
+                                <small>Gửi RefreshToken cũ ➔ Nhận cặp mới</small>
+                            </div>
+                        </div>
+                        <div class="p-step" data-mock="call-success">
+                            <div class="step-num">4</div>
+                            <div class="step-text">
+                                <span class="http-tag get">GET</span>
+                                <strong>/api/orders</strong>
+                                <small>Cầm AT mới gọi lại ➔ 200 OK thành công</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Postman View Area -->
+                    <div class="postman-screen">
+                        <div class="screen-top-bar">
+                            <div class="url-badge">
+                                <span class="method-label" id="mockMethod">POST</span>
+                                <span class="url-text" id="mockUrl">https://api.microservices.local/auth/login</span>
+                            </div>
+                            <div class="res-status-label status-200" id="mockStatus">Status: 200 OK</div>
+                        </div>
+
+                        <div class="screen-body-grid">
+                            <div class="body-pane req-pane">
+                                <span class="pane-title"><i class="fa-solid fa-arrow-up-from-bracket"></i> Request Payload (JSON)</span>
+                                <pre><code id="mockReqBody">{
+  "username": "sinhvien_it",
+  "password": "Password@123"
+}</code></pre>
+                            </div>
+                            <div class="body-pane res-pane">
+                                <span class="pane-title"><i class="fa-solid fa-arrow-down-to-bracket"></i> Response Data (JSON)</span>
+                                <pre><code id="mockResBody">{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "4f9d8a21-9e7b-41c3-8f0b-193c68df419a",
+  "tokenType": "Bearer",
+  "expiresIn": 30
+}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== SLIDE 7: LESSON 3 - AUTHORIZATION ARCHITECTURE ==================== -->
+        <section class="slide" data-slide="7">
+            <div class="slide-content">
+                <div class="slide-header">
+                    <div class="header-left">
+                        <span class="section-tag">LESSON 3: PHÂN QUYỀN TRONG MICROSERVICES</span>
+                        <h2>Kiến Trúc Phân Quyền Đa Tầng (Gateway ⟷ Service Con)</h2>
+                    </div>
+                </div>
+
+                <!-- Architectural Infographic -->
+                <div class="arch-flow-diagram">
+                    <!-- Layer 1 -->
+                    <div class="arch-card-flow">
+                        <div class="card-flow-header flow-gateway">
+                            <i class="fa-solid fa-network-wired"></i>
+                            <h4>API GATEWAY</h4>
+                            <span>Authentication & Blacklist</span>
+                        </div>
+                        <ul class="flow-list">
+                            <li><strong>Xác thực chữ ký JWT:</strong> Giải mã token với Secret Key.</li>
+                            <li><strong>Redis Blacklist:</strong> Kiểm tra token có bị đăng xuất chưa.</li>
+                            <li><strong>Header Enrichment:</strong> Gắn <code>X-User-Roles</code>, <code>X-User-Id</code> chuyển tiếp xuống dưới.</li>
+                        </ul>
+                    </div>
+
+                    <div class="flow-arrow-icon"><i class="fa-solid fa-arrow-right"></i></div>
+
+                    <!-- Layer 2 -->
+                    <div class="arch-card-flow highlight-border">
+                        <div class="card-flow-header flow-resource">
+                            <i class="fa-solid fa-boxes-stacked"></i>
+                            <h4>RESOURCE SERVICES (Order / Product)</h4>
+                            <span>Authorization (RBAC / PBAC)</span>
+                        </div>
+                        <ul class="flow-list">
+                            <li><strong>Spring Security Context:</strong> Nạp Authorities (<code>ROLE_USER</code>, <code>ROLE_ADMIN</code>).</li>
+                            <li><strong>Controller Protection:</strong> Bảo vệ API bằng <code>@PreAuthorize</code>.</li>
+                            <li><strong>Business Rules:</strong> Kiểm tra sở hữu tài nguyên (Resource Owner).</li>
+                        </ul>
+                    </div>
+
+                    <div class="flow-arrow-icon"><i class="fa-solid fa-arrow-right"></i></div>
+
+                    <!-- Layer 3 -->
+                    <div class="arch-card-flow">
+                        <div class="card-flow-header flow-eval">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            <h4>KẾT QUẢ TRẢ VỀ</h4>
+                            <span>Decision & Response</span>
+                        </div>
+                        <ul class="flow-list">
+                            <li><span class="status-badge-green">200 OK</span>: Đúng quyền Role ➔ Thực thi logic nghiệp vụ.</li>
+                            <li><span class="status-badge-red">403 Forbidden</span>: Sai Role ➔ Chặn ngay tại tầng Controller.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== SLIDE 8: LESSON 3 - CODE IMPLEMENTATION ==================== -->
+        <section class="slide" data-slide="8">
+            <div class="slide-content">
+                <div class="slide-header">
+                    <div class="header-left">
+                        <span class="section-tag">LESSON 3: CODE TRIỂN KHAI</span>
+                        <h2>Cấu Hình Spring Security & Phân Quyền @PreAuthorize</h2>
+                    </div>
+                </div>
+
+                <div class="two-col-layout">
+                    <!-- Config FilterChain -->
+                    <div class="col-box-light">
+                        <div class="box-head">
+                            <i class="fa-solid fa-gear text-blue"></i>
+                            <h3>1. Bật Method Security tại Service con</h3>
+                        </div>
+                        <pre class="code-block-light"><code class="language-java"><span class="kwd">@Configuration</span>
+<span class="kwd">@EnableWebSecurity</span>
+<span class="kwd">@EnableMethodSecurity</span>(prePostEnabled = <span class="kwd">true</span>)
+<span class="kwd">public class</span> <span class="cls">SecurityConfig</span> {
+
+    <span class="kwd">@Bean</span>
+    <span class="kwd">public</span> SecurityFilterChain filterChain(HttpSecurity http) <span class="kwd">throws</span> Exception {
+        <span class="kwd">return</span> http
+            .csrf(AbstractHttpConfigurer::disable)
+            .sessionManagement(s -> s.sessionCreationPolicy(STATELESS))
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(<span class="str">"/api/public/**"</span>).permitAll()
+                .anyRequest().authenticated()
+            )
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.<span class="kwd">class</span>)
+            .build();
+    }
+}</code></pre>
+                    </div>
+
+                    <!-- Controller Annotations -->
+                    <div class="col-box-light">
+                        <div class="box-head">
+                            <i class="fa-solid fa-user-shield text-teal"></i>
+                            <h3>2. Phân Quyền Chi Tiết ở Controller</h3>
+                        </div>
+                        <pre class="code-block-light"><code class="language-java"><span class="kwd">@RestController</span>
+<span class="kwd">@RequestMapping</span>(<span class="str">"/api/orders"</span>)
+<span class="kwd">public class</span> <span class="cls">OrderController</span> {
+
+    <span class="cmt">// 1. Cả USER và ADMIN đều có quyền xem</span>
+    <span class="kwd">@GetMapping</span>
+    <span class="kwd">@PreAuthorize</span>(<span class="str">"hasAnyRole('USER', 'ADMIN')"</span>)
+    <span class="kwd">public</span> List&lt;Order&gt; getOrders() { ... }
+
+    <span class="cmt">// 2. CHỈ duy nhất ADMIN mới có quyền xóa</span>
+    <span class="kwd">@DeleteMapping</span>(<span class="str">"/{id}"</span>)
+    <span class="kwd">@PreAuthorize</span>(<span class="str">"hasRole('ADMIN')"</span>)
+    <span class="kwd">public</span> ResponseEntity&lt;?&gt; deleteOrder(<span class="kwd">@PathVariable</span> Long id) {
+        orderService.delete(id);
+        <span class="kwd">return</span> ResponseEntity.ok(<span class="str">"Xoá thành công đơn: "</span> + id);
+    }
+}</code></pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== SLIDE 9: LESSON 4 - LOGOUT & REDIS BLACKLIST ==================== -->
+        <section class="slide" data-slide="9">
+            <div class="slide-content">
+                <div class="slide-header">
+                    <div class="header-left">
+                        <span class="section-tag">LESSON 4: THU HỒI TOKEN & ĐĂNG XUẤT</span>
+                        <h2>Tại sao Đăng Xuất Stateless JWT bắt buộc cần Redis Blacklist?</h2>
+                    </div>
+                </div>
+
+                <div class="two-col-layout">
+                    <!-- Why client side removal is not enough -->
+                    <div class="col-box-light danger-box">
+                        <div class="box-head">
+                            <i class="fa-solid fa-circle-xmark text-red"></i>
+                            <h3>Sai lầm: Chỉ xóa Token ở Frontend (LocalStorage)</h3>
+                        </div>
+                        <p class="text-explain">Nhiều lập trình viên chỉ viết: <code>localStorage.removeItem("token")</code> khi bấm Đăng xuất.</p>
+                        <div class="danger-callout">
+                            <strong>Lỗ hổng bảo mật:</strong> Chuỗi JWT vẫn hoàn toàn hợp lệ về mặt chữ ký số! Nếu kẻ tấn công đã sao chép được token này trước đó, chúng vẫn có thể gửi request truy cập dữ liệu bình thường.
+                        </div>
+                    </div>
+
+                    <!-- Redis TTL Dynamic Solution -->
+                    <div class="col-box-light success-box">
+                        <div class="box-head">
+                            <i class="fa-solid fa-bolt text-teal"></i>
+                            <h3>Giải pháp: Redis Blacklist với TTL Động</h3>
+                        </div>
+                        <div class="formula-card">
+                            <span class="formula-label"><i class="fa-solid fa-calculator"></i> Công thức tính thời gian lưu Blacklist:</span>
+                            <div class="math-box">
+                                <span class="formula-chip chip-ttl">TTL</span> = <span class="formula-chip chip-exp">Thời điểm hết hạn (exp)</span> − <span class="formula-chip chip-now">Thời điểm hiện tại (now)</span>
+                            </div>
+                        </div>
+                        <ul class="styled-list-light">
+                            <li>Khi gọi <code>/auth/logout</code>: Lưu Access Token vào Redis với Key <code>blacklist:&lt;token&gt;</code> và gán <code>EXPIRE = TTL</code>.</li>
+                            <li><strong>Tối ưu bộ nhớ 100%:</strong> Khi Access Token tự nhiên hết hạn, Redis tự động giải phóng RAM, bảng Blacklist không bao giờ bị tràn bộ nhớ!</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== SLIDE 10: LESSON 4 - REDIS CODE ==================== -->
+        <section class="slide" data-slide="10">
+            <div class="slide-content">
+                <div class="slide-header">
+                    <div class="header-left">
+                        <span class="section-tag">LESSON 4: CODE TRIỂN KHAI</span>
+                        <h2>Tích Hợp Redis Blacklist Trong Spring Boot</h2>
+                    </div>
+                </div>
+
+                <div class="two-col-layout">
+                    <!-- LogoutService -->
+                    <div class="col-box-light">
+                        <div class="box-head">
+                            <i class="fa-solid fa-right-from-bracket text-red"></i>
+                            <h3>1. LogoutService (Lưu Redis với TTL)</h3>
+                        </div>
+                        <pre class="code-block-light"><code class="language-java"><span class="kwd">@Service</span>
+<span class="kwd">public class</span> <span class="cls">LogoutService</span> {
+
+    <span class="kwd">@Autowired</span>
+    <span class="kwd">private</span> StringRedisTemplate redisTemplate;
+
+    <span class="kwd">public void</span> logout(String accessToken, String refreshToken) {
+        <span class="cmt">// 1. Tính thời gian sống còn lại của JWT (ms)</span>
+        <span class="kwd">long</span> remainingTtl = jwtService.getRemainingTime(accessToken);
+
+        <span class="kwd">if</span> (remainingTtl &gt; 0) {
+            <span class="cmt">// 2. Lưu vào Redis Blacklist kèm TTL tự hủy</span>
+            redisTemplate.opsForValue().set(
+                <span class="str">"blacklist:"</span> + accessToken,
+                <span class="str">"REVOKED"</span>,
+                remainingTtl,
+                TimeUnit.MILLISECONDS
+            );
+        }
+        <span class="cmt">// 3. Đánh dấu hủy Refresh Token trong DB</span>
+        refreshTokenRepo.revokeByToken(refreshToken);
+    }
+}</code></pre>
+                    </div>
+
+                    <!-- Filter Interception -->
+                    <div class="col-box-light">
+                        <div class="box-head">
+                            <i class="fa-solid fa-filter text-purple"></i>
+                            <h3>2. Chặn Request tại JwtAuthFilter</h3>
+                        </div>
+                        <pre class="code-block-light"><code class="language-java"><span class="cmt">// Trong JwtAuthenticationFilter.doFilterInternal()</span>
+String token = extractTokenFromHeader(request);
+
+<span class="kwd">if</span> (token != <span class="kwd">null</span>) {
+    <span class="cmt">// Kiểm tra nhanh O(1) trong Redis Cache</span>
+    Boolean isBlacklisted = redisTemplate.hasKey(<span class="str">"blacklist:"</span> + token);
+
+    <span class="kwd">if</span> (Boolean.TRUE.equals(isBlacklisted)) {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType(<span class="str">"application/json;charset=UTF-8"</span>);
+        response.getWriter().write(
+            <span class="str">"{\"error\": \"Token đã bị thu hồi do Đăng xuất!\"}"</span>
+        );
+        <span class="kwd">return</span>; <span class="cmt">// Chặn đứng request</span>
+    }
+}</code></pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== SLIDE 11: LESSON 4 - LIVE DEMO TERMINAL REDIS ==================== -->
+        <section class="slide" data-slide="11">
+            <div class="slide-content">
+                <div class="slide-header">
+                    <div class="header-left">
+                        <span class="section-tag">LESSON 4: LIVE DEMO</span>
+                        <h2>Kiểm Thử Thu Hồi Token qua Redis CLI & Postman</h2>
+                    </div>
+                    <div class="live-status-pill"><span class="pulse-dot"></span> REALTIME VERIFICATION</div>
+                </div>
+
+                <div class="two-col-layout">
+                    <!-- Left: Redis Terminal Simulation -->
+                    <div class="col-box-light terminal-wrapper">
+                        <div class="terminal-bar">
+                            <div class="term-dots"><span class="d-red"></span><span class="d-yellow"></span><span class="d-green"></span></div>
+                            <span class="term-title"><i class="fa-solid fa-terminal"></i> redis-cli (TTL Realtime Demo)</span>
+                        </div>
+                        <div class="terminal-screen-light">
+                            <p><span class="p-cmd">127.0.0.1:6379></span> KEYS "blacklist:*"</p>
+                            <p class="p-out">1) "blacklist:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyMSIsImV4cCI6MTcyNzcwMTU4MH0..."</p>
+                            <p><span class="p-cmd">127.0.0.1:6379></span> TTL "blacklist:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."</p>
+                            <p class="p-out highlight-ttl">(integer) 438  <span class="p-note"># Đang đếm ngược 438 giây còn lại rồi tự động xóa</span></p>
+                            <p><span class="p-cmd">127.0.0.1:6379></span> GET "blacklist:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."</p>
+                            <p class="p-out">"REVOKED"</p>
+                        </div>
+                    </div>
+
+                    <!-- Right: Postman 401 Interception -->
+                    <div class="col-box-light postman-intercept-card">
+                        <div class="box-head">
+                            <i class="fa-solid fa-shield-virus text-red"></i>
+                            <h3>Thử dùng lại Token vừa Logout để gọi API</h3>
+                        </div>
+                        <div class="request-summary">
+                            <span class="http-tag get">GET</span>
+                            <code>/api/orders</code>
+                            <span class="status-pill-unauth">401 UNAUTHORIZED</span>
+                        </div>
+                        <div class="response-json-box">
+                            <pre><code>{
+  "timestamp": "2026-09-30T16:15:30.451Z",
+  "status": 401,
+  "error": "Unauthorized",
+  "message": "Token đã bị thu hồi do Đăng xuất! Vui lòng đăng nhập lại."
+}</code></pre>
+                        </div>
+                        <div class="success-note">
+                            <i class="fa-solid fa-check-double text-teal"></i>
+                            <span>Hệ thống chặn thành công 100% dù chữ ký JWT trên lý thuyết chưa hết hạn.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== SLIDE 12: SUMMARY & WRAP UP ==================== -->
+        <section class="slide" data-slide="12">
+            <div class="slide-content summary-layout">
+                <div class="slide-header text-center-header">
+                    <span class="section-tag gradient-pill">TỔNG KẾT BÀI HỌC & HOÀN THÀNH MÔN HỌC</span>
+                    <h2>Bức Tranh Toàn Cảnh Bảo Mật Microservices Chuẩn Doanh Nghiệp</h2>
+                </div>
+
+                <div class="summary-grid-3">
+                    <div class="sum-card card-blue">
+                        <div class="sum-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                        <h3>1. Dual-Token Architecture</h3>
+                        <p>Access Token ngắn hạn (Stateless) kết hợp Refresh Token Stateful có xoay vòng (Rotation) triệt tiêu hoàn toàn Replay Attack.</p>
+                    </div>
+
+                    <div class="sum-card card-purple">
+                        <div class="sum-icon"><i class="fa-solid fa-user-lock"></i></div>
+                        <h3>2. Multi-tier Authorization</h3>
+                        <p>Gateway đóng vai trò Authentication & Enrich Claims, Service con đảm nhiệm Authorization chi tiết bằng <code>@PreAuthorize</code>.</p>
+                    </div>
+
+                    <div class="sum-card card-red">
+                        <div class="sum-icon"><i class="fa-solid fa-bolt"></i></div>
+                        <h3>3. Redis Blacklist with TTL</h3>
+                        <p>Giải quyết bài toán Đăng xuất tức thì cho Stateless Token với mức tiêu thụ RAM tối ưu và tốc độ truy vấn O(1).</p>
+                    </div>
+                </div>
+
+                <div class="congratulations-banner">
+                    <div class="congrat-text">
+                        <h3><i class="fa-solid fa-graduation-cap"></i> Chúc mừng các bạn đã hoàn thành môn Microservices với Spring Boot!</h3>
+                        <p>Hãy áp dụng trọn vẹn kiến trúc này vào Đồ án tốt nghiệp và các hệ thống Production thực tế.</p>
+                    </div>
+                    <div class="qa-badge-light">
+                        <i class="fa-solid fa-comments"></i> HỎI & ĐÁP (Q & A)
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Presentation Footer Navigation -->
+    <footer class="presentation-footer">
+        <div class="footer-left">
+            <button class="nav-btn" id="prevBtn"><i class="fa-solid fa-chevron-left"></i> Trước</button>
+            <button class="nav-btn btn-primary" id="nextBtn">Tiếp <i class="fa-solid fa-chevron-right"></i></button>
+            <span class="slide-indicator" id="slideIndicator">Slide 1 / 12</span>
+        </div>
+
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <div class="footer-right">
+            <span class="keyboard-hints"><kbd>←</kbd> <kbd>→</kbd> Chuyển slide | <kbd>F</kbd> Toàn màn hình | <kbd>O</kbd> Tổng quan</span>
+        </div>
+    </footer>
+
+    <!-- Overview Modal (Press 'O') -->
+    <div class="overview-modal" id="overviewModal">
+        <div class="overview-content">
+            <div class="overview-header">
+                <h3><i class="fa-solid fa-table-cells"></i> Danh Sách 12 Slide Bài Học</h3>
+                <button class="close-btn" id="closeOverviewBtn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="overview-grid" id="overviewGrid"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
